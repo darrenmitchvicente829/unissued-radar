@@ -190,6 +190,12 @@ function netGrid(r) {
     }).join('') + '</tr>';
   }).join('') + '</table>';
 }
+function netByWeeks(r) {   // the same deposit held for part of the season: the drop and the weekly chores both scale
+  const weeks = [4, 8, 13, 26], plans = weeks.map(function (w) { return R.farmPlan(r.p, r.iv, Object.assign({}, S.sc, { weeks: w })); });
+  const line = function (label, f) { return '<tr><th>' + label + '</th>' + plans.map(function (p) { return '<td class="' + p.verdict + '">' + f(p) + '</td>'; }).join('') + '</tr>'; };
+  return '<table class="grid"><tr><th>Weeks held</th>' + weeks.map(function (w) { return '<th>' + w + ' wk</th>'; }).join('') + '</tr>' + line('Net of fees', function (p) { return signed(p.net); }) +
+    line('Hours of work', function (p) { return p.hours.toFixed(1) + ' h'; }) + line('Net an hour', function (p) { return signed(p.perHour); }) + line('Verdict', function (p) { return p.verdict; }) + '</table>';
+}
 function renderDetail(r) {
   const p = r.p, iv = r.iv, f = r.farm, fact = function (a, b) { return '<div><small>' + a + '</small><b>' + b + '</b></div>'; };
   const why = f.verdict === 'FARM' ? 'beats both the T-bill and $' + S.sc.wage + ' an hour' : f.verdict === 'MARGINAL' ? 'clears its fees but not ' + (f.net < f.tbill ? 'the T-bill' : '$' + S.sc.wage + ' an hour') : 'the fees exceed the modelled drop';
@@ -201,7 +207,7 @@ function renderDetail(r) {
     '<div class="two"><div class="card"><h2>How the figure is made</h2>' + equationOf(r) + '</div><div><div class="card"><h2>What moves it</h2>' + sensitivity(r) + '</div><div class="card" style="margin-top:10px"><h2>Nearest priced peers</h2>' + nearestPeers(r) + '</div></div></div>' +
     '<div class="two"><div class="card"><h2>Farm verdict · ' + usd(S.sc.deposit) + ' for ' + S.sc.weeks + ' weeks at a ' + pct(S.sc.share) + ' drop share</h2><p class="callout ' + f.verdict + '"><span><b class="' + f.verdict + '">' + f.verdict + '</b>: a modelled drop of ' + usd(f.drop) + ' for ' + usd(f.gas) + ' of fees and ' + f.hours.toFixed(1) + ' h of work, net ' + signed(f.net) + ' (' + signed(f.perHour) + ' an hour). It ' + why + '.</span></p>' +
     '<table class="mini"><tr><td>Drop = ' + usd(iv.value) + ' × ' + pct(S.sc.share) + ' × ' + usd(S.sc.deposit) + ' ÷ ' + usd(p.tvl + S.sc.deposit) + ' × ' + S.sc.weeks + '/' + S.sc.season + ' wk</td><td class="n">' + usd(f.drop) + '</td></tr><tr><td>The same ' + usd(S.sc.deposit) + ' in a 4% T-bill for ' + S.sc.weeks + ' weeks</td><td class="n">' + usd(f.tbill) + '</td></tr><tr><td>Fees are covered above a drop share of</td><td class="n">' + pct(f.breakEven, 2) + '</td></tr></table>' +
-    '<h2 style="margin-top:12px">Net of fees by drop share and deposit</h2>' + netGrid(r) + '</div>' +
+    '<h2 style="margin-top:12px">Net of fees by drop share and deposit</h2>' + netGrid(r) + '<h2 style="margin-top:12px">Held for part of the ' + S.sc.season + '-week season</h2>' + netByWeeks(r) + '</div>' +
     '<div class="card"><h2>Farm plan · ' + f.steps.length + ' steps on ' + esc(f.chain) + ', with what each costs and takes</h2><ol class="steps">' + f.steps.map(function (s) { return '<li><span class="t">' + s.tag + '</span><span>' + esc(s.text) + '.</span><span class="c">' + (s.cost ? usd(s.cost) : 'free') + '</span><span class="c">' + s.min + ' min</span></li>'; }).join('') +
     '<li class="sum"><span></span><span>All in</span><span class="c">' + usd(f.gas) + '</span><span class="c">' + f.hours.toFixed(1) + ' h</span></li></ol></div></div>';
   window.scrollTo(0, 0);
